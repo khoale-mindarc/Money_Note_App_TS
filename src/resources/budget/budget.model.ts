@@ -3,6 +3,9 @@ import Budget from '@/resources/budget/budget.interface';
 
 const BudgetSchema = new Schema(
     {
+        user_id: {
+            type: String,
+        },
         title: {
             type: String,
             required: true,

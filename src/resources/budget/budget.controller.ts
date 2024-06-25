@@ -4,6 +4,7 @@ import HttpException from '@/utils/exceptions/http.exception';
 import validationMiddleware from '@/middleware/validation.middleware';
 import validate from '@/resources/budget/budget.validation';
 import BudgetService from '@/resources/budget/budget.service';
+import authenticated from '@/middleware/authenticated.middleware';
 
 class BudgetController implements Controller {
     public path = '/budgets';
@@ -15,12 +16,18 @@ class BudgetController implements Controller {
     }
 
     private initialiseRoutes(): void {
-        this.router.get(`${this.path}`, this.getBudgets);
+        this.router.get(`${this.path}`, authenticated, this.getBudgets);
 
         this.router.post(
             `${this.path}/create`,
-            validationMiddleware(validate.create),
+            [validationMiddleware(validate.create), authenticated],
             this.create,
+        );
+
+        this.router.post(
+            `${this.path}/update`,
+            [validationMiddleware(validate.create), authenticated],
+            this.update,
         );
     }
 
@@ -35,7 +42,16 @@ class BudgetController implements Controller {
             const parsedDate = date ? new Date(date as string) : null;
             const parsedMonth = month ? new Date(month as string) : null;
 
-            const budgets = await this.BudgetService.getBudgets(
+            if (!req.user) {
+                return next(
+                    new HttpException(500, 'Unable to retrieve budgets'),
+                );
+            }
+
+            const userId = req.user.id;
+
+            const budgets = await this.BudgetService.get(
+                userId,
                 parsedType,
                 parsedDate,
                 parsedMonth,
@@ -55,7 +71,10 @@ class BudgetController implements Controller {
             const { title, amount, type, date, category, description } =
                 req.body;
 
+            const userId = req.user.id;
+
             const budget = await this.BudgetService.create(
+                userId,
                 title,
                 amount,
                 type,
@@ -67,6 +86,45 @@ class BudgetController implements Controller {
             res.status(201).json({ budget });
         } catch (error) {
             next(new HttpException(400, 'Can not create budget'));
+        }
+    };
+
+    private update = async (
+        req: Request,
+        res: Response,
+        next: NextFunction,
+    ): Promise<Response | void> => {
+        try {
+            const id = req.query.id as string;
+            const { title, amount, type, date, category, description } =
+                req.body;
+
+            if (!id) {
+                return next(new HttpException(400, 'Can not update budget'));
+            }
+
+            const userId = req.user.id;
+
+            const budget = await this.BudgetService.update(
+                id,
+                userId,
+                title,
+                amount,
+                type,
+                date,
+                category,
+                description,
+            );
+
+            if (!budget) {
+                return next(
+                    new HttpException(400, 'Can not find budget by id'),
+                );
+            }
+
+            res.status(200).json({ budget });
+        } catch (error) {
+            next(new HttpException(400, 'Can not update budget'));
         }
     };
 }
