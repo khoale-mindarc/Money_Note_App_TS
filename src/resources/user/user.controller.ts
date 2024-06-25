@@ -7,7 +7,7 @@ import UserService from '@/resources/user/user.service';
 import authenticated from '@/middleware/authenticated.middleware';
 
 class UserController implements Controller {
-    public path = 'users';
+    public path = '/users';
     public router = Router();
     private UserService = new UserService();
 
@@ -28,14 +28,8 @@ class UserController implements Controller {
             this.login,
         );
 
-        this.router.get(`${this.path}`, this.testing);
-
-        // this.router.get(`${this.path}`, authenticated, this.getUser);
+        this.router.get(`${this.path}`, authenticated, this.getUser);
     }
-
-    private testing = (res: Response): Response | void => {
-        res.status(200).json({ user: 'abc' });
-    };
 
     private register = async (
         req: Request,
@@ -52,7 +46,7 @@ class UserController implements Controller {
                 'user',
             );
 
-            res.status(201).json(token);
+            res.status(201).json({ token: token });
         } catch (error: any) {
             next(new HttpException(400, error.message));
         }
