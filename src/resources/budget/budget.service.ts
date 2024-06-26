@@ -15,6 +15,7 @@ class BudgetService {
      * Create a new Budget
      */
     public async create(
+        user_id: string,
         title: string,
         amount: number,
         type: string,
@@ -24,6 +25,7 @@ class BudgetService {
     ): Promise<Budget> {
         try {
             const budget = await this.budget.create({
+                user_id,
                 title,
                 amount,
                 type,
@@ -39,17 +41,56 @@ class BudgetService {
     }
 
     /**
+     * Update a new Budget
+     */
+    public async update(
+        id: string,
+        userId: string,
+        title: string,
+        amount: number,
+        type: string,
+        date: Date,
+        category: string,
+        description: string,
+    ): Promise<Budget | null> {
+        try {
+            const budget = await this.budget.findOne({
+                user_id: userId,
+                _id: id,
+            });
+            if (!budget) {
+                return null;
+            }
+
+            budget.title = title;
+            budget.amount = amount;
+            budget.type = type;
+            budget.date = date;
+            budget.category = category;
+            budget.description = description;
+            budget.save();
+
+            return budget;
+        } catch (error) {
+            throw new Error('Unable to create budget');
+        }
+    }
+
+    /**
      * List Budgets by date and type
      * @param date The date to filter by
      * @param type The type to filter by
      */
-    public async getBudgets(
+    public async get(
+        user_id: string,
         type: string | null | undefined,
         date: Date | null | undefined,
         month: Date | null | undefined,
     ): Promise<Budget[]> {
         try {
-            let query: any;
+            let query: any = {
+                user_id: user_id,
+            };
             if (type) {
                 query = {
                     type: type,
@@ -75,8 +116,6 @@ class BudgetService {
                     $lte: end,
                 };
             }
-
-            console.log(query);
 
             const budgets = await this.budget.find(query);
             return budgets;
