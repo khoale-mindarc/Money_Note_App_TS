@@ -123,6 +123,17 @@ class BudgetService {
             throw new Error('Unable to retrieve budgets by date and type');
         }
     }
+
+    /**
+     * Delete a Budget
+     */
+    public async delete(id: string): Promise<void> {
+        try {
+            await this.budget.findByIdAndDelete(id);
+        } catch (error) {
+            throw new Error('Unable to delete budget');
+        }
+    }
 }
 
 export default BudgetService;

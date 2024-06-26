@@ -26,9 +26,11 @@ class BudgetController implements Controller {
 
         this.router.post(
             `${this.path}/update`,
-            [validationMiddleware(validate.create), authenticated],
+            [validationMiddleware(validate.update), authenticated],
             this.update,
         );
+
+        this.router.delete(`${this.path}/delete`, [authenticated], this.delete);
     }
 
     private getBudgets = async (
@@ -98,11 +100,6 @@ class BudgetController implements Controller {
             const id = req.query.id as string;
             const { title, amount, type, date, category, description } =
                 req.body;
-
-            if (!id) {
-                return next(new HttpException(400, 'Can not update budget'));
-            }
-
             const userId = req.user.id;
 
             const budget = await this.BudgetService.update(
@@ -125,6 +122,24 @@ class BudgetController implements Controller {
             res.status(200).json({ budget });
         } catch (error) {
             next(new HttpException(400, 'Can not update budget'));
+        }
+    };
+
+    private delete = async (
+        req: Request,
+        res: Response,
+        next: NextFunction,
+    ) => {
+        try {
+            const id = req.query.id as string;
+            if (!id) {
+                next(new HttpException(400, 'ID budget is required'));
+            }
+
+            await this.BudgetService.delete(id);
+            res.status(200).json({ message: 'Budget Deleted!' });
+        } catch (error) {
+            next(new HttpException(400, 'Can not delete budget'));
         }
     };
 }
